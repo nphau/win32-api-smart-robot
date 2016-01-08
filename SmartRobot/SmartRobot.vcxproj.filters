@@ -33,9 +33,6 @@
     <ClInclude Include="ThreadLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TimerLib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Packages.h">
       <Filter>Header Files</Filter>
     </ClInclude>

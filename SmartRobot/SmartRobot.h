@@ -2,7 +2,6 @@
 
 #include "resource.h"
 #include "ThreadLib.h"
-#include "TimerLib.h"
 
 #define MAX_LOADSTRING 100
 
@@ -12,8 +11,8 @@ TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
 static HWND hWndMain;
-static DWORD32 total = 2;
-static DWORD32 remaining = total;
+static int total = 2;
+static int remaining = total;
 static DWORD32 numPackage[3];
 
 void OnCreate(HWND hWnd)
@@ -22,11 +21,13 @@ void OnCreate(HWND hWnd)
 
 	ZeroMemory(&packBegin, sizeof(PACKAGE));
 	ZeroMemory(&packCurrent, sizeof(PACKAGE));
+	packBegin.id = packCurrent.id = -1;
+	remaining = total;
 }
 
 void OnStart(HWND hWnd)
 {
-	CallMainTimer(hWndMain, 500);
+	// CallMainTimer(hWndMain, 500);
 
 	if (!(ghMutex = CreateMutex(NULL, FALSE, NULL)))
 	{
@@ -36,15 +37,17 @@ void OnStart(HWND hWnd)
 
 	hThreadMain = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainThreadProc, NULL, 0, 0);
 	
+	tData.id = -1;
+	tData.hWnd = hWnd;
+
 	for (int i = 0; i < MAX_THREADS; i++)
 	{
-		hThread[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, NULL, 0, 0);
+		hThread[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, &tData, 0, 0);
 	}
 }
 void OnDestroy(HWND hWnd)
 {
 	CloseHandle(ghMutex); // Closing mutex handle
-	CloseAllTimer(hWnd, TIMERID, MAX_TIMERS); // Closing all timer
 	PostQuitMessage(0);	// Exit message
 }
 

@@ -9,9 +9,8 @@ static int cHeight = 0;
 static int cxClient = 0;
 static int cyClient = 0;
 
-
-extern DWORD32 total;
-extern DWORD32 remaining;
+extern int total;
+extern int remaining;
 extern DWORD32 numPackage[3];
 extern HWND hWndMain;
 

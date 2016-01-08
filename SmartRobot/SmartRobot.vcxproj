@@ -84,7 +84,6 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="ThreadLib.h" />
-    <ClInclude Include="TimerLib.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SmartRobot.cpp" />
