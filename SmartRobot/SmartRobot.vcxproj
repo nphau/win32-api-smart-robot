@@ -77,7 +77,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GUIFunction.h" />
+    <ClInclude Include="GuiLib.h" />
+    <ClInclude Include="Packages.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SmartRobot.h" />
     <ClInclude Include="stdafx.h" />

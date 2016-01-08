@@ -1,7 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include "resource.h"
 #include "ThreadLib.h"
+#include "TimerLib.h"
 
 #define MAX_LOADSTRING 100
 
@@ -10,62 +11,41 @@ HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
-static PACKAGE p0;
-static PACKAGE p1;
-static PACKAGE p2;
-static PACKAGE p3;
-static PACKAGE rPackage;
-
 static HWND hWndMain;
+static DWORD32 total = 2;
+static DWORD32 remaining = total;
+static DWORD32 numPackage[3];
 
-static int NumPackage[3];
-
-bool OnCreate(HWND hWnd)
+void OnCreate(HWND hWnd)
 {
-
 	hWndMain = hWnd;
 
-	ZeroMemory(&p0, sizeof(PACKAGE));
-	ZeroMemory(&p1, sizeof(PACKAGE));
-	ZeroMemory(&p2, sizeof(PACKAGE));
-	ZeroMemory(&p3, sizeof(PACKAGE));
-	ZeroMemory(&rPackage, sizeof(PACKAGE));
-
-	ZeroMemory(&NumPackage, sizeof(int));
-	
-	return true;
+	ZeroMemory(&packBegin, sizeof(PACKAGE));
+	ZeroMemory(&packCurrent, sizeof(PACKAGE));
 }
 
-bool OnStart(HWND hWnd)
+void OnStart(HWND hWnd)
 {
-	try{
+	CallMainTimer(hWndMain, 500);
 
-		if (!(ghMutex = CreateMutex(NULL, FALSE, NULL)))
-		{ 
-			return false; 
-		}
-
-		hThreadMain = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainThreadProc, NULL, 0, 0);
-
-	}
-	catch (...)
+	if (!(ghMutex = CreateMutex(NULL, FALSE, NULL)))
 	{
-		GetLastError();
+		MessageBox(hWndMain, L"Không tạo được tiến trình", L"", MB_OK);
+		return;
 	}
-	return true;
-}
 
+	hThreadMain = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainThreadProc, NULL, 0, 0);
+	
+	for (int i = 0; i < MAX_THREADS; i++)
+	{
+		hThread[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, NULL, 0, 0);
+	}
+}
 void OnDestroy(HWND hWnd)
 {
-	for (int i = 0; i < MAX_TIMERS; i++)
-	{
-		KillTimer(hWnd, TIMERID[i]);
-	}
-
-	CloseHandle(ghMutex);
-	
-
-	PostQuitMessage(0);
+	CloseHandle(ghMutex); // Closing mutex handle
+	CloseAllTimer(hWnd, TIMERID, MAX_TIMERS); // Closing all timer
+	PostQuitMessage(0);	// Exit message
 }
 
 void OnPaint(HWND hWnd, HDC hdc, RECT rect)

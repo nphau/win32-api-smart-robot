@@ -36,7 +36,10 @@
     <ClInclude Include="TimerLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GUIFunction.h">
+    <ClInclude Include="Packages.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GuiLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

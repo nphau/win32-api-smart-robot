@@ -2,67 +2,94 @@
 #include "resource.h"
 #include "TimerLib.h"
 
+#define MAX_THREADS 3
 static HANDLE ghMutex = NULL;
-
-extern int NumPackage[3];
-
-const int MAX_THREADS = 3;
-
+static HANDLE hThreadMain = NULL;
 static HANDLE hThread[MAX_THREADS];
-static HANDLE hThreadMain;
 
-typedef struct THREADDATA
+/* Closing list of thread handle */
+void CloseThreadHandle(HANDLE hList[], DWORD32 max)
 {
-	DWORD32 index;
-
-}THREADDATA, *PTHREADDATA;
+	for (DWORD32 i = 0; i < max; i++)
+	{
+		CloseHandle(hList[i]);
+	}
+}
 
 DWORD WINAPI ThreadProc(LPVOID lpParam)
 {
-	if (WaitForSingleObject(ghMutex, INFINITE) == 0)
-	{
-		NumPackage[index] ++;
+	UNREFERENCED_PARAMETER(lpParam);
 
-		if (remaining > 1 && rPackage.isValid == true)
+	DWORD dwCount = 0, dwWaitResult = 0;
+
+	while (dwCount < 1)
+	{
+		dwWaitResult = WaitForSingleObject(ghMutex, INFINITE);
+
+		switch (dwWaitResult)
 		{
-			switch (index)
-			{
-			case 0:
-				CallThread1Timer(500);
-				break;
-			case 1:
-				CallThread3Timer(500);
-				break;
-			case 2:
-				CallThread2Timer(500);
-				break;
+
+		case WAIT_OBJECT_0:	// The thread got ownership of the mutex
+			__try {
+
+				switch (packCurrent.id)
+				{
+				case 0: // Red
+					CallThread0Timer(hWndMain, 500);
+
+					remaining--;
+					Sleep(5000);
+					numPackage[0]++;
+					break;
+				case 1: // Violet 
+					CallThread1Timer(hWndMain, 500);
+					remaining--;
+					Sleep(5000);
+					numPackage[1]++;
+					break;
+				case 2: // Blue
+					CallThread2Timer(hWndMain, 500);
+					remaining--;
+					Sleep(5000);
+					numPackage[2]++;
+					break;
+				}
+
+				dwCount++;
+
 			}
+
+			__finally {
+				ReleaseMutex(ghMutex);
+			}
+			break;
+		case WAIT_ABANDONED:
+			return FALSE;
 		}
-		remaining--;
-		ReleaseMutex(ghMutex);
 	}
 	return TRUE;
 }
 
 DWORD WINAPI MainThreadProc(LPVOID lpParam)
 {
-	CallMainTimer(500);
+	DWORD retVal = (WaitForMultipleObjects(MAX_THREADS, hThread, TRUE, INFINITE));
 
-	while (!isRun);
-
-	if (isRun)
+	if ((retVal >= WAIT_OBJECT_0) && (retVal <= (WAIT_OBJECT_0 + MAX_THREADS - 1)))
 	{
-		for (int i = 0; i < MAX_THREADS; i++)
-		{
-			if (!(hThread[i] = CreateThread(NULL, 0,
-				(LPTHREAD_START_ROUTINE)ThreadProc,
-				(LPVOID)&rPackage, 0, 0)))
-			{
-				return false;
-			}
-			SetThreadPriority(hThread[i], THREAD_PRIORITY_HIGHEST);
-		}
-	}
 
-	isRun = false;
+		for (int i = -1; i < 3; i++)
+		{
+			UpdateInfo(hWndMain, i);
+		}
+
+		if (remaining < 0)
+		{
+			CloseThreadHandle(hThread, MAX_THREADS);
+			CloseHandle(hThreadMain);
+			ExitProcess(0);
+		}
+
+		Sleep(1000);
+	}
+	return TRUE;
 }

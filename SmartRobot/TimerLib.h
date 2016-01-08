@@ -1,152 +1,153 @@
-#pragma once
+﻿#pragma once
 
 #include "resource.h"
 #include <stdlib.h>
 #include <time.h>
 #include <windowsx.h>
-
-#include "GUIFunction.h"
-
-
-extern PACKAGE p0;
-extern PACKAGE p1;
-extern PACKAGE p2;
-extern PACKAGE p3;
-extern PACKAGE rPackage;
+#include "Packages.h"
 
 extern HWND hWndMain;
-
-static DWORD32 index = 0;
-static DWORD32 total = 5;
-static DWORD32 remaining = total;
-
 const int MAX_TIMERS = 4;
-static int TIMERID[MAX_TIMERS] = { 1, 2, 3, 4 };
+static int TIMERID[MAX_TIMERS] = { 99, 100, 101, 102 };
 
-bool isRun = false;
-
-VOID CALLBACK TimerMainProc(HWND hWnd, UINT message, UINT iTimerID, DWORD dwTime)
+void CloseAllTimer(HWND hWnd, int timerID[], DWORD32 max)
 {
-	HDC hdc = GetDC(hWnd);
-
-	p0.color = colorType[index];
-
-	if (!MovePackage(hWnd, hdc, p0, DIRECTION::LEFT_TO_RIGHT))
+	for (DWORD32 i = 0; i < max; i++)
 	{
-		CopyPackage(rPackage, p0);
-		rPackage.isValid = true;
-		rPackage.total = 0;
-		isRun = true;
-		KillTimer(hWnd, TIMERID[0]);
+		KillTimer(hWnd, timerID[i]);
 	}
 }
 
-void CallMainTimer(int timeSeek)
+/* Set default value for begin package */
+void SetBeginPackValue(PACKAGE& package)
 {
-	SetRect(&p0.rBegin,
-		listBox[0].left, listBox[0].bottom + 10,
-		listBox[0].left + sizeBox, listBox[0].bottom + 10 + sizeBox);
+	int xLeft = listBox[0].left;
+	int yTop = listBox[0].bottom + 10;
+	int xRight = xLeft + sizeBox;
+	int yBottom = yTop + sizeBox;
 
-	SetRect(&p0.rEnd,
-		cxClient / 2, listBox[0].bottom + 10,
-		listBox[0].left + sizeBox, listBox[0].bottom + 10 + sizeBox);
+	// Begin point
+	SetRect(&packBegin.rBegin, xLeft, yTop, xRight, yBottom);
+	// End point
+	SetRect(&packBegin.rEnd, cxClient / 2, yTop, listBox[0].left + sizeBox, yBottom);
 
 	srand(time(NULL));
-	index = rand() % 3;
-	SetTimer(hWndMain, TIMERID[0], timeSeek, TimerMainProc);
+	packBegin.id = rand() % 3;
+	packBegin.color = colorType[packBegin.id];
+	packBegin.total = 0;
+}
+VOID CALLBACK TimerMainProc(HWND hWnd, UINT message, UINT iTimerID, DWORD dwTime)
+{
+	if (remaining < 1)
+	{
+		KillTimer(hWnd, TIMERID[0]);
+	}
+	HDC hdc = GetDC(hWnd);
 
+	if (!MovePackage(hWnd, hdc, packBegin, DIRECTION::LEFT_TO_RIGHT))
+	{
+		CopyPackage(packCurrent, packBegin);
+		packCurrent.isAvailable = true;
+		packCurrent.total = 0;
+
+		SetBeginPackValue(packBegin);
+	}
 }
 
+void CallMainTimer(HWND hWnd, int timeSeek)
+{
+	SetBeginPackValue(packBegin);
+	SetTimer(hWnd, TIMERID[0], timeSeek, TimerMainProc);
+}
+
+VOID CALLBACK Thread0TimerProc(HWND hWnd, UINT message, UINT iTimerID, DWORD dwTime)
+{
+	if (packCurrent.isAvailable)
+	{
+		HDC hdc = GetDC(hWnd);
+
+		if (!MovePackage(hWnd, hdc, packCurrent, DIRECTION::BOTTOM_TO_TOP))
+		{
+			// InvalidateRect(hWnd, &packCurrent.rCurr, true);
+			ZeroMemory(&packCurrent, sizeof(PACKAGE));
+		}
+		ReleaseDC(hWnd, hdc);
+	}
+}
+
+// Màu đỏ
+void CallThread0Timer(HWND hWnd, int time)
+{
+	int left = listBox[0].right + 10;
+	int right = left + sizeBox;
+
+	CopyRect(&packCurrent.rBegin, &packCurrent.rCurr);
+
+	packCurrent.total = 0;
+	packCurrent.rBegin.left = left;
+	packCurrent.rBegin.right = right;
+
+	SetRect(&packCurrent.rEnd, left, 0, right, sizeBox);
+	SetTimer(hWnd, TIMERID[1], time, Thread0TimerProc);
+}
 VOID CALLBACK Thread2TimerProc(HWND hWnd, UINT message, UINT iTimerID, DWORD dwTime)
 {
-	HDC hdc = GetDC(hWnd);
-
-	if (!MovePackage(hWnd, hdc, rPackage, DIRECTION::LEFT_TO_RIGHT))
+	if (packCurrent.isAvailable)
 	{
-		KillTimer(hWnd, TIMERID[2]);
-		rPackage.isValid = false;
-		rPackage.total = 0;
-	}
-	ReleaseDC(hWnd, hdc);
-}
+		HDC hdc = GetDC(hWnd);
 
-void CallThread2Timer(int timeSeek)
-{
-	if (rPackage.isValid == true)
-	{
-		int top = listBox[0].bottom + 10;
-		int left = listBox[1].left;
-		int right = left + sizeBox;
-		int bottom = listBox[0].bottom + 10 + sizeBox;
-		rPackage.total = 0;
-
-		CopyRect(&rPackage.rBegin, &rPackage.rCurr);
-		SetRect(&rPackage.rEnd, cxClient, listBox[1].bottom, cxClient + sizeBox, listBox[1].bottom + sizeBox);
-
-		SetTimer(hWndMain, TIMERID[2], timeSeek, Thread2TimerProc);
+		if (!MovePackage(hWnd, hdc, packCurrent, DIRECTION::LEFT_TO_RIGHT))
+		{
+			// InvalidateRect(hWnd, &packCurrent.rCurr, true);
+			ZeroMemory(&packCurrent, sizeof(PACKAGE));
+		}
+		ReleaseDC(hWnd, hdc);
 	}
 }
-
-VOID CALLBACK Thread3TimerProc(HWND hWnd, UINT message, UINT iTimerID, DWORD dwTime)
+// Màu xanh
+void CallThread2Timer(HWND hWnd, int timeSeek)
 {
-	HDC hdc = GetDC(hWnd);
+	int top = listBox[0].bottom + 10;
+	int left = listBox[1].left;
+	int right = left + sizeBox;
+	int bottom = listBox[0].bottom + 10 + sizeBox;
+	packCurrent.total = 0;
 
-	if (!MovePackage(hWnd, hdc, rPackage, DIRECTION::TOP_TO_BOTTOM))
-	{
-		KillTimer(hWnd, TIMERID[3]);
-		rPackage.isValid = false;
-		rPackage.total = 0;
-	}
-	ReleaseDC(hWnd, hdc);
-}
+	CopyRect(&packCurrent.rBegin, &packCurrent.rCurr);
+	SetRect(&packCurrent.rEnd, cxClient, listBox[1].bottom, cxClient + sizeBox, listBox[1].bottom + sizeBox);
 
-void CallThread3Timer(int timeSeek)
-{
-	if (rPackage.isValid == true)
-	{
-		int top = listBox[2].top;
-		int left = listBox[0].right + 10;
-		int right = left + sizeBox;
-		int bottom = top + sizeBox;
-
-		CopyRect(&rPackage.rBegin, &rPackage.rCurr);
-		
-		rPackage.rBegin.left = left;
-		rPackage.rBegin.right = right;
-		rPackage.total = 0;
-
-		SetRect(&rPackage.rEnd, left, cyClient, right, bottom);
-
-		SetTimer(hWndMain, TIMERID[3], timeSeek, Thread3TimerProc);
-	}
+	SetTimer(hWnd, TIMERID[2], timeSeek, Thread2TimerProc);
 }
 
 VOID CALLBACK Thread1TimerProc(HWND hWnd, UINT message, UINT iTimerID, DWORD dwTime)
 {
-	HDC hdc = GetDC(hWnd);
-
-	if (!MovePackage(hWnd, hdc, rPackage, DIRECTION::BOTTOM_TO_TOP))
+	if (packCurrent.isAvailable)
 	{
-		KillTimer(hWnd, TIMERID[1]);
-		rPackage.isValid = false;
-		rPackage.total = 0;
+		HDC hdc = GetDC(hWnd);
+
+		if (!MovePackage(hWnd, hdc, packCurrent, DIRECTION::TOP_TO_BOTTOM))
+		{
+			ZeroMemory(&packCurrent, sizeof(PACKAGE));
+		}
+		ReleaseDC(hWnd, hdc);
 	}
-	ReleaseDC(hWnd, hdc);
 }
 
-void CallThread1Timer(int time)
+// Màu tím
+void CallThread1Timer(HWND hWnd, int timeSeek)
 {
-	if (rPackage.isValid == true)
-	{
-		int left = listBox[0].right + 10;
-		int right = left + sizeBox;
+	int top = listBox[2].top;
+	int left = listBox[0].right + 10;
+	int right = left + sizeBox;
+	int bottom = top + sizeBox;
 
-		CopyRect(&rPackage.rBegin, &rPackage.rCurr);
+	CopyRect(&packCurrent.rBegin, &packCurrent.rCurr);
 
-		rPackage.rBegin.left = left;
-		rPackage.rBegin.right = right;
-		rPackage.total = 0;
-		SetRect(&rPackage.rEnd, left, 0, right, sizeBox);
-		SetTimer(hWndMain, TIMERID[1], time, Thread1TimerProc);
-	}
+	packCurrent.rBegin.left = left;
+	packCurrent.rBegin.right = right;
+	packCurrent.total = 0;
+
+	SetRect(&packCurrent.rEnd, left, cyClient, right, bottom);
+
+	SetTimer(hWnd, TIMERID[3], timeSeek, Thread1TimerProc);
 }
