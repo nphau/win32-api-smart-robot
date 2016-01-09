@@ -11,7 +11,7 @@ TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
 static HWND hWndMain;
-static int total = 2;
+static int total = 5;
 static int remaining = total;
 static DWORD32 numPackage[3];
 
@@ -35,7 +35,7 @@ void OnStart(HWND hWnd)
 		return;
 	}
 
-	hThreadMain = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainThreadProc, NULL, 0, 0);
+	hThreadMain = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainThreadProc, &tData, 0, 0);
 	
 	tData.id = -1;
 	tData.hWnd = hWnd;
@@ -55,7 +55,7 @@ void OnPaint(HWND hWnd, HDC hdc, RECT rect)
 {
 	GetClientRect(hWnd, &rect);
 
-	DrawPath(hdc, rect);
+	DrawPath(hWnd, hdc, rect, total, remaining);
 
 }
 

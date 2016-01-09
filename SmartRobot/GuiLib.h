@@ -9,10 +9,7 @@ static int cHeight = 0;
 static int cxClient = 0;
 static int cyClient = 0;
 
-extern int total;
-extern int remaining;
 extern DWORD32 numPackage[3];
-extern HWND hWndMain;
 
 enum DIRECTION {
 	LEFT_TO_RIGHT,
@@ -40,7 +37,7 @@ void DrawBox(HDC hdc, RECT rect, COLORREF color)
 }
 
 /* Update info */
-void UpdateInfo(HWND hWnd, int id)
+void UpdateInfo(HWND hWnd, int id, int total, int remaining)
 {
 	WCHAR wInfo[MAX_PATH] = L"Total = ";
 	HDC hdc = GetDC(hWnd);
@@ -94,7 +91,7 @@ void UpdateInfo(HWND hWnd, int id)
 }
 
 /* Draw paths in screen */
-void DrawPath(HDC hdc, RECT rect)
+void DrawPath(HWND hWnd, HDC hdc, RECT rect, int total, int remaining)
 {
 	cxClient = rect.right - rect.left;
 	cyClient = rect.bottom - rect.top;
@@ -133,7 +130,6 @@ void DrawPath(HDC hdc, RECT rect)
 	// Update info
 	for (int i = -1; i < 3; i++)
 	{
-		UpdateInfo(hWndMain, i);
+		UpdateInfo(hWnd, i, total, remaining);
 	}
-
 }
