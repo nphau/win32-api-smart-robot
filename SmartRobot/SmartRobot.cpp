@@ -145,6 +145,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			OnStart(hWnd);
 			break;
 		case ID_FILE_STOP:
+			OnStop(hWnd);
+			break;
+		case ID_FILE_RESET:
+			OnReset(hWnd);
+			break;
+		case ID_OPTION_SPEED:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_DLG_SPEED), hWnd, Speed);
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
@@ -158,7 +165,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_DESTROY:
-		OnDestroy(hWnd);
+		PostQuitMessage(0);
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);

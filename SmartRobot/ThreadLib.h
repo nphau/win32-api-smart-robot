@@ -3,13 +3,14 @@
 #include "Packages.h"
 
 #define MAX_THREADS 3
-#define MAX_TIMES 200
+
 
 static HANDLE ghMutex = NULL;
 static HANDLE hThreadMain = NULL;
 static HANDLE hThread[MAX_THREADS];
 extern int total;
 extern int remaining;
+extern int MAX_TIME_WAIT;
 
 typedef struct tagTHREADDATA
 {
@@ -18,18 +19,16 @@ typedef struct tagTHREADDATA
 
 }THREADDATA, *PTHREADDATA;
 
-
-THREADDATA tData;
+static THREADDATA tData;
 
 /* Closing list of thread handle */
 void CloseAllThreadHandle(HANDLE hList[], DWORD32 dMax)
 {
+	TerminateThread(hThreadMain, 0);
 	for (DWORD32 i = 0; i < dMax; i++)
 	{
-		if (WaitForSingleObject(hList[i], INFINITE) == WAIT_OBJECT_0)
-		{
-			CloseHandle(hList[i]);
-		}
+		TerminateThread(hList[i], 0);
+		CloseHandle(hList[i]);
 	}
 }
 
@@ -45,7 +44,7 @@ bool Thread0MoveFunction(HWND hWnd)
 	packCurrent.rBegin.right = right;
 
 	SetRect(&packCurrent.rEnd, left, 0, right, sizeBox);
-	
+
 	HDC hdc = GetDC(hWnd);
 
 	while (true)
@@ -55,14 +54,13 @@ bool Thread0MoveFunction(HWND hWnd)
 			ZeroMemory(&packCurrent, sizeof(PACKAGE));
 			remaining--;
 			numPackage[0]++;
-			ReleaseMutex(ghMutex);
 			return true;
 		}
-		Sleep(MAX_TIMES);
+		Sleep(MAX_TIME_WAIT);
 	}
 	return false;
 }
-bool Thread2MoveFunction(HWND hWnd)
+bool Thread1MoveFunction(HWND hWnd)
 {
 	int top = listBox[2].top;
 	int left = listBox[0].right + 10;
@@ -87,14 +85,13 @@ bool Thread2MoveFunction(HWND hWnd)
 			ZeroMemory(&packCurrent, sizeof(PACKAGE));
 			remaining--;
 			numPackage[2]++;
-			ReleaseMutex(ghMutex);
 			return true;
 		}
-		Sleep(MAX_TIMES);
+		Sleep(MAX_TIME_WAIT);
 	}
 	return false;
 }
-bool Thread1MoveFunction(HWND hWnd)
+bool Thread2MoveFunction(HWND hWnd)
 {
 	int top = listBox[0].bottom + 10;
 	int left = listBox[1].left;
@@ -115,10 +112,9 @@ bool Thread1MoveFunction(HWND hWnd)
 			ZeroMemory(&packCurrent, sizeof(PACKAGE));
 			remaining--;
 			numPackage[1]++;
-			ReleaseMutex(ghMutex);
 			return true;
 		}
-		Sleep(MAX_TIMES);
+		Sleep(MAX_TIME_WAIT);
 	}
 	return false;
 }
@@ -139,7 +135,7 @@ bool MainThreadMoveFunction(HWND hWnd)
 			packCurrent.total = 0;
 			return true;
 		}
-		Sleep(MAX_TIMES);
+		Sleep(MAX_TIME_WAIT);
 	}
 	return false;
 }
@@ -152,7 +148,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 	{
 		if (remaining < 1)
 		{
-			return false;
+			return FALSE;
 		}
 		if (WaitForSingleObject(ghMutex, INFINITE) == WAIT_OBJECT_0)
 		{
@@ -162,17 +158,26 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 			{
 			case 0: // Red
 				data->id = -1;
-				return Thread0MoveFunction(hw);
+				Thread0MoveFunction(hw);
+				ReleaseMutex(ghMutex);
+				Sleep(MAX_TIME_WAIT);
+				return TRUE;
 			case 1: // Violet 
 				data->id = -1;
-				return Thread2MoveFunction(hw);
+				Thread1MoveFunction(hw);
+				ReleaseMutex(ghMutex);
+				Sleep(MAX_TIME_WAIT);
+				return TRUE;
 			case 2: // Blue
 				data->id = -1;
-				return Thread1MoveFunction(hw);
+				Thread2MoveFunction(hw);
+				ReleaseMutex(ghMutex);
+				Sleep(MAX_TIME_WAIT);
+				return TRUE;
 			}
 		}
 	}
-	return true;
+	return TRUE;
 }
 
 DWORD WINAPI MainThreadProc(LPVOID lpParam)
@@ -187,14 +192,17 @@ DWORD WINAPI MainThreadProc(LPVOID lpParam)
 			CloseAllThreadHandle(hThread, MAX_THREADS);
 			CloseHandle(hThreadMain);
 
-			return false;
+			return FALSE;
 		}
+
 		MainThreadMoveFunction(data->hWnd);
-		
-		Sleep(1000);
+
+		Sleep(MAX_TIME_WAIT * 5);
 
 		tData.id = packCurrent.id;
+
 		ReleaseMutex(ghMutex);
+
 
 		DWORD retVal = WaitForMultipleObjects(MAX_THREADS, hThread, FALSE, INFINITE);
 
@@ -205,6 +213,7 @@ DWORD WINAPI MainThreadProc(LPVOID lpParam)
 				UpdateInfo(data->hWnd, i, total, remaining);
 			}
 		}
+
 	}
 	return TRUE;
 }
