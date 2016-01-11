@@ -67,7 +67,7 @@ void UpdateInfo(HWND hWnd, int id, int total, int remaining)
 		// Count
 		SetTextColor(hdc, colorType[2]);
 		wcscpy(wInfo, L"LINE 2");
-		TextOutW(hdc, listBox[1].right - sizeBox - 20,listBox[1].bottom + sizeBox / 2, wInfo, 6);
+		TextOutW(hdc, listBox[1].right - sizeBox - 20, listBox[1].bottom + sizeBox / 2, wInfo, 6);
 
 		// LINE 2
 		swprintf(wInfo, L"(Count=%d)", numPackage[1]);
@@ -90,6 +90,46 @@ void UpdateInfo(HWND hWnd, int id, int total, int remaining)
 	}
 }
 
+void DrawNote(HDC hdc)
+{
+	WCHAR wInfo[MAX_PATH] = L"";
+	SelectObject(hdc, GetStockObject(DC_BRUSH));
+
+	// Figures
+	int size = 30;
+	int top = listBox[3].top + 20;
+	int left = listBox[3].left + 20;
+	int right = left + size;
+
+	// Robot 1
+	SetDCBrushColor(hdc, colorType[0]);
+	Rectangle(hdc, left, top, right, top + size);
+	SetTextColor(hdc, colorType[0]);
+	wcscpy(wInfo, L"Robot 1");
+	TextOutW(hdc, right + 10, top + 7, wInfo, 10);
+
+	// Robot 2
+	SetDCBrushColor(hdc, colorType[2]);
+	Rectangle(hdc, left, top + size + 20, right, top + size * 2 + 10 * 2);
+	SetTextColor(hdc, colorType[2]);
+	wcscpy(wInfo, L"Robot 2");
+	TextOutW(hdc, right + 10, listBox[3].top + 80, wInfo, 10);
+	
+
+	// Robot 3
+	SetDCBrushColor(hdc, colorType[1]);
+	Rectangle(hdc, left, top + size * 2 + 40, right, top + size * 3 + 40);
+	SetTextColor(hdc, colorType[1]);
+	wcscpy(wInfo, L"Robot 3");
+	TextOutW(hdc, right + 10, top + size * 3 + 15, wInfo, 10);
+
+	//// Waiting
+	//SetDCBrushColor(hdc, RGB(255, 255, 0));
+	//Rectangle(hdc, left, top + size * 3 + 60, right, top + size * 4 + 60);
+	//SetTextColor(hdc, RGB(255, 255, 0));
+	//wcscpy(wInfo, L"Waiting");
+	//TextOutW(hdc, right + 10, top + size * 4 + 35, wInfo, 10);
+}
 /* Draw paths in screen */
 void DrawPath(HWND hWnd, HDC hdc, RECT rect, int total, int remaining)
 {
@@ -125,6 +165,7 @@ void DrawPath(HWND hWnd, HDC hdc, RECT rect, int total, int remaining)
 	for (int i = 0; i < MAX_LISTBOX; i++)
 	{
 		Rectangle(hdc, listBox[i].left, listBox[i].top, listBox[i].right, listBox[i].bottom);
+
 	}
 
 	// Update info
@@ -132,4 +173,7 @@ void DrawPath(HWND hWnd, HDC hdc, RECT rect, int total, int remaining)
 	{
 		UpdateInfo(hWnd, i, total, remaining);
 	}
+
+	// Draw note
+	DrawNote(hdc);
 }

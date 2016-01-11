@@ -14,42 +14,44 @@ TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 static int total = 5;
 static int remaining = total;
 static DWORD32 numPackage[3];
-
+static HWND hMain = NULL;
 int MAX_TIME_WAIT = 300;
 
 void OnCreate(HWND hWnd)
 {
+	hMain = hWnd;
 	ZeroMemory(&packBegin, sizeof(PACKAGE));
 	ZeroMemory(&packCurrent, sizeof(PACKAGE));
 	packBegin.id = packCurrent.id = -1;
-	remaining = total;
 }
 
 void OnStart(HWND hWnd)
 {
+	remaining = total;
+
 	if (!(ghMutex = CreateMutex(NULL, FALSE, NULL)))
 	{
 		MessageBox(hWnd, L"Không tạo được tiến trình", L"", MB_OK);
 		return;
 	}
 
-	hThreadMain = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainThreadProc, &tData, 0, 0);
+	hThreadMain = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainThreadProc, NULL, 0, 0);
 	
-	tData.id = -1;
-	tData.hWnd = hWnd;
-
 	for (int i = 0; i < MAX_THREADS; i++)
 	{
-		hThread[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, &tData, 0, 0);
+		hThread[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, NULL, 0, 0);
 	}
 }
+
 void OnReset(HWND hWnd)
 {
-
+	remaining = total;
+	numPackage[0] = numPackage[1] = numPackage[2] = 0;
 }
+
 void OnStop(HWND hWnd)
 {
-	CloseHandle(ghMutex); // Closing mutex handle
+	CloseHandle(ghMutex);
 	CloseAllThreadHandle(hThread, MAX_THREADS);
 }
 
@@ -104,6 +106,8 @@ INT_PTR CALLBACK Speed(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			MAX_TIME_WAIT = SendMessage(GetDlgItem(hDlg, IDC_SLIDER_SPEED), TBM_GETPOS, 0, 0);
 			remaining = total = GetDlgItemInt(hDlg, IDC_EDIT_TOTAL, NULL, FALSE);
 			EndDialog(hDlg, LOWORD(wParam));
+			OnStop(hMain);
+			OnStart(hMain);
 			return (INT_PTR)TRUE;
 		case IDCANCEL:
 			EndDialog(hDlg, LOWORD(wParam));
